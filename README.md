@@ -7,3 +7,8 @@
 python -m venv .venv
 .venv/Scripts/Activate.ps1
 ```
+
+
+参考资料
+
+- [cplex教程](https://www.bilibili.com/video/BV1ot411X79Z/)
