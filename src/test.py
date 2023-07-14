@@ -1,3 +1,5 @@
+
+# %%
 # 导入docplex
 from docplex.mp.model import Model
 # 创建模型对象
@@ -19,3 +21,6 @@ if solution:
     print(f"y的取值为：{y.solution_value:.2f}")
 else:
     print("求解失败")
+# %%
+print('hello')
+# %%
