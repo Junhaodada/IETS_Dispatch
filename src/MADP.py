@@ -57,12 +57,10 @@ class V:
     """
     value function of t
     """
-    def __init__(self, t) -> None:
+    def __init__(self, t, R = None) -> None:
         self.t = t # t time-slot(1-24h)
-        self.R = None
+        self.R = R
         self.value = 0
-    def calValue(self):
-        self.value = self.value
 
 class X:
     """
@@ -106,7 +104,8 @@ T_NODE_NUM = 5 # thermal nodes
 SAMPLE_SIZE = 1 # 1000
 E_TS_MAX = 200 # KWh
 E_BS_MAX = 80 # KWh
-alpha = 0.1
+ALPHA = 0.1
+INF = 1e9
 R_set:List[List[R]] = []
 W_set:List[List[W]] = []
 S_set:List[List[S]] = []
@@ -159,9 +158,39 @@ for n in range(1, N): # step2: ...
         # step5: ...
         z_t_n = V_set[n][t]
         z_t_n.R = s_c[t].R
-        z_t_n.value = alpha * v_t_n.value + (1 - alpha) * V_set[n][t].value
+        z_t_n.value = ALPHA * v_t_n.value + (1 - ALPHA) * V_set[n][t].value
 
         # step6: ...
+
+
+
+# algorithm 2 off-line pre-learning process of ADP-IL
+
+# 专家经验
+X_set:List[List[X]] = []
+S_set:List[List[S]] = []
+
+expert_demonstrantions_S = S_set[:5]
+expert_demonstrantions_X = X_set[:5]
+expert_demonstrantions = [(expert_demonstrantions_S[i],expert_demonstrantions_X[i]) for i in range(SAMPLE_SIZE)]
+
+V_set:List[List[V]]=[[] for i in range(SAMPLE_SIZE)]
+for i in range(SAMPLE_SIZE):
+    for t in range(T):
+        V_set[t].append(V(t))
+for t in range(T):
+        V_set[0][t].R = R_set[0][t]
+        V_set[0][t].value = INF
+
+
+n = 1
+expert_tag=[_ for _ in range(5)]
+while len(expert_tag):
+    e = expert_demonstrantions[0]
+    for t in range(1, T):
+        pass
+
+    n+=1
 
 
 
