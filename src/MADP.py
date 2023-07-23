@@ -188,9 +188,13 @@ expert_tag=[_ for _ in range(5)]
 while len(expert_tag):
     e = expert_demonstrantions[0]
     for t in range(1, T):
-        pass
-
+        R_t_n = e[0][t].R
+        V_set[i][t].R = R_t_n        
+        V_set[i][t].value = cal_cost(e[0],e[1])
+        # step 5
     n+=1
+
+# run algo1 return V_t_0
 
 
 
