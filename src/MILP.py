@@ -5,14 +5,27 @@ from typing import List
 def solve_milp(s_c:List[S], t):
     """
     solve (20a) MILP with cplex
-    """
-    R_t_minus_1:R = s_c[t-1].R
-    R_t:R = s_c[t].R
 
+    Parameter
+    ---------
+    s_c: List[S]
+        s_c是算法1选择的样本, 包含{W, S}, W为外部环境, S为资源状态
+        举例: 
+            s_c[t] 代表t时刻的S, s_c[t].R 代表t时刻的R
+            s_c[t].R 代表t时刻的R
+            s_c[t].R 代表t时刻的R
+    t: int
+        t是算法1循环迭代的时刻
+    """
+    R_t_minus_1:R = s_c[t-1].R # t-1时刻的R
+    R_t:R = s_c[t].R # t时刻的R
+
+ 
     # 创建模型
     model = Model(name='IETS MILP MODEL')
 
     # 定义决策变量
+    # 变量相关参数
     T = 24  # time num
     CHP_NUM = 1  # CHP num
     RES_NUM = 1 # RES num
@@ -40,6 +53,8 @@ def solve_milp(s_c:List[S], t):
     Q_RES_MIN = 0
     Q_RES_MAX = 0
     G_NUM = 0
+    ##########################################决策变量###############################################
+    # 模型中所有约束会使用到以下变量
     H_CHP_n = {(n, t): model.continuous_var(lb=H_CHP_MIN, ub=H_CHP_MAX, name=f'H_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
     P_CHP_n = {(n, t): model.continuous_var(lb=P_CHP_MIN, ub=P_CHP_MAX, name=f'P_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
     a_BS_dn = {(n, t): model.binary_var(name=f'a_BS_d{n}_{t}') for n in range(BS_NUM) for t in range(T)}
@@ -53,8 +68,14 @@ def solve_milp(s_c:List[S], t):
     P_RES_n = {(n, t): model.continuous_var(lb=P_RES_MIN, ub=P_RES_MAX, name=f'P_RES_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
     Q_RES_n = {(n, t): model.continuous_var(lb=Q_RES_MIN, ub=Q_RES_MAX, name=f'Q_RES_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
     m_TS_n = {(n, t): model.continuous_var(lb=Q_RES_MIN, ub=Q_RES_MAX, name=f'm_TS_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
+    # m_TDN
+    # tem_TDN
+    # u_i
+    # P_ij
+    # Q_ij
     gama_g = [model.continuous_var(lb=0,ub=1) for _ in range(G_NUM)]
     # Xt_A ...
+    # X_t 包含的所有决策变量, 需要把上述所有子变量加入到X_t中，作为返回值
     X_t = {}
     for t in range(T):
         X_t[t] = {
@@ -73,17 +94,14 @@ def solve_milp(s_c:List[S], t):
             # X_t_A ...
         }
 
+    ###################################目标函数##########################################################################
     # 定义目标函数
     # $X_t=argmin_{X_t \in \Pi _t} (C_t(S_t,X_t)+\sum_{g\in G}\gamma _g V_t^x(R_g))$
     obj_expr = [cal_cost(s_c[t],X_t[t])+ (model.sum(gama_g[g]) for g in range(G_NUM)) for t in range(T)]
+    # 最小化目标函数
     model.minimize(obj_expr)
-
-    # 添加约束
-    model.add_constraint(model.sum(gama_g)==1)
-
-    # 状态转移
-    
-    # 1) TS约束
+    #####################################模型约束#######################################################################
+    ####################################(1)TS约束#######################################################################
     # 1a
     model.add_constraint(m_TS_n[(n,t)] == 0.8*a_TS_cn[(n,t)] -0.8*a_TS_dn[(n,t)] for n in range(TS_NUM) for t in range(T))
     # 1b
@@ -96,19 +114,50 @@ def solve_milp(s_c:List[S], t):
     model.add_constraint(a_TS_cn[(n,t)]+a_TS_dn[(n,t)]<=1 for n in range(TS_NUM) for t in range(T))
     model.add_constraint(R_t.E_TS == (1-0.95)*R_t_minus_1.E_TS - H_TS_dn[(n,t)]+0.95*H_TS_cn[(n,t)] for n in range(TS_NUM) for t in range(T))
     # 1n
-    # ....
+    # ......
     # 1o
     model.add_constraint(s_c[1].R.E_TS==s_c[T].R.E_TS)
-    # 2) CHP约束
+    ##########################################(2)CHP约束##################################################################
     # 2f
     # model.add_constraint( H_CHP_n[(n,t)]== for n in range(TS_NUM) for t in range(T))
     # 2g
     # 2h
-    
+    ###########################################(3)热负载约束###############################################################
+    # input your code
 
 
+    # end input
+    ###########################################(4)TDN/热配网约束###########################################################
+    # input your code
 
 
+    # end input
+    ############################################(5)RES约束#################################################################
+    # input your code
 
-    return X_t[t+1]
+
+    # end input
+    ###########################################(6)BS约束####################################################################
+    # input your code
+
+
+    # end input
+    ##########################################(7)EDN/电配网约束##############################################################
+    # input your code
+
+
+    # end input
+    #########################################(8)冷约束#######################################################################
+    # input your code
+
+
+    # end input
+    #########################################(9)其他约束#####################################################################
+    # gama_g约束
+    model.add_constraint(model.sum(gama_g)==1)
+    # 状态转移约束
+    # ......
+
+    # 返回t+1时刻的调度X, 目标值函数
+    return X_t[t+1], model.get_solve_details()
 

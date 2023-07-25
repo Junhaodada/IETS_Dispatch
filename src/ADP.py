@@ -103,7 +103,7 @@ SAMPLE_SIZE = 1 # 1000
 E_TS_MAX = 200 # KWh
 E_BS_MAX = 80 # KWh
 ALPHA = 0.1
-INF = 1e9
+INF = 1e6
 
 # Algorithm 1 off-line pre-learning process of monotone-ADP
 def ADP_MONOTONE(V0:V):
@@ -144,14 +144,15 @@ def ADP_MONOTONE(V0:V):
 
     X_set = []
     for n in range(1,N+1): # step2: ...
-        # step3: choose a sample random
+        # !step3: choose a sample random
         sample_tag = np.arange(SAMPLE_SIZE)
         np.random.shuffle(sample_tag)
         s_c:List[S] = S_set[sample_tag[n]] # random sample ω
         for t in range(T):
             # step4: ...
-            # ! V_set 与 20a 的V如何衔接
             X_t_plus_1, obj_value = solve_milp(s_c,t)
+            # !状态转移 R_t
+            # ! 21) modify
             v_t_n = V(t)
             v_t_n.R = s_c[t].R
             v_t_n.value=obj_value
@@ -161,35 +162,37 @@ def ADP_MONOTONE(V0:V):
             z_t_n.R = s_c[t].R
             z_t_n.value = ALPHA * v_t_n.value + (1 - ALPHA) * V_set[n][t].value
 
-            # step6: ...
+            # !step6: ...
 
     return V_set
 
 # Algorithm 2 off-line pre-learning process of ADP-IL
 def ADP_IL():
     # generate 5 sample of expert demonstrantions
+    # ! 生成S cplex求X
     X_set:List[List[X]] = [] # X_set[n]: [X_set[n][t]:X,...]
     S_set:List[List[S]] = S_set # S_set[n]: [S_set[n][t]:S,...]
     EXPERT_SAMPLE_NUM = 5
     expert_demonstrantions_S = S_set[:EXPERT_SAMPLE_NUM]
     expert_demonstrantions_X = X_set[:EXPERT_SAMPLE_NUM]
     expert_demonstrantions = [(expert_demonstrantions_S[i],expert_demonstrantions_X[i]) for i in range(expert_demonstrantions_X)]
-    # init V
+    # ! init V
     V_set:List[List[V]]=[[] for i in range(EXPERT_SAMPLE_NUM)]
     for i in range(EXPERT_SAMPLE_NUM):
         for t in range(T):
             V_set[t].append(V(t,value=INF))
     # start loop
     n = 0
+    # ! 不使用shuffle
     expert_tag=np.arange(EXPERT_SAMPLE_NUM)
     np.random.shuffle(expert_tag)
     for n in range(len(EXPERT_SAMPLE_NUM)):
         e = expert_demonstrantions[expert_tag[n]]
-        for t in range(1, T):
+        for t in range(1, T): # ! t
             R_t_n = e[0][t].R
             V_set[n][t].R = R_t_n        
             V_set[n][t].value = cal_cost(e[0],e[1])
-            # step 5
+            # !step 5
             # update the value function using step size αn and then perform 
             # monotonicity preservation projection ΠM  by solving (24). 
 
