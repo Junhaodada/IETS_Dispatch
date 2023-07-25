@@ -1,12 +1,13 @@
 from docplex.mp.model import Model
 from ADP import X,V,S,W,R,C
 from utils import *
-def solve_milp(s_c:S, t):
+from typing import List
+def solve_milp(s_c:List[S], t):
     """
     solve (20a) MILP with cplex
     """
-
-    R_t = s_c.R
+    R_t_minus_1:R = s_c[t-1].R
+    R_t:R = s_c[t].R
 
     # 创建模型
     model = Model(name='IETS MILP MODEL')
@@ -51,6 +52,7 @@ def solve_milp(s_c:S, t):
     P_BS_cn = {(n, t): model.continuous_var(lb=P_BS_C_MIN, ub=P_BS_C_MAX, name=f'P_BS_c{n}_{t}') for n in range(BS_NUM) for t in range(T)}
     P_RES_n = {(n, t): model.continuous_var(lb=P_RES_MIN, ub=P_RES_MAX, name=f'P_RES_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
     Q_RES_n = {(n, t): model.continuous_var(lb=Q_RES_MIN, ub=Q_RES_MAX, name=f'Q_RES_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
+    m_TS_n = {(n, t): model.continuous_var(lb=Q_RES_MIN, ub=Q_RES_MAX, name=f'm_TS_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
     gama_g = [model.continuous_var(lb=0,ub=1) for _ in range(G_NUM)]
     # Xt_A ...
     X_t = {}
@@ -73,7 +75,7 @@ def solve_milp(s_c:S, t):
 
     # 定义目标函数
     # $X_t=argmin_{X_t \in \Pi _t} (C_t(S_t,X_t)+\sum_{g\in G}\gamma _g V_t^x(R_g))$
-    obj_expr = [cal_cost(s_c,X_t[t])+ (model.sum(gama_g[g]) for g in range(G_NUM)) for t in range(T)]
+    obj_expr = [cal_cost(s_c[t],X_t[t])+ (model.sum(gama_g[g]) for g in range(G_NUM)) for t in range(T)]
     model.minimize(obj_expr)
 
     # 添加约束
@@ -81,6 +83,30 @@ def solve_milp(s_c:S, t):
 
     # 状态转移
     
+    # 1) TS约束
+    # 1a
+    model.add_constraint(m_TS_n[(n,t)] == 0.8*a_TS_cn[(n,t)] -0.8*a_TS_dn[(n,t)] for n in range(TS_NUM) for t in range(T))
+    # 1b
+    model.add_constraint(H_TS_cn[(n,t)]>=a_TS_cn[(n,t)]*0 for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(H_TS_cn[(n,t)]<=a_TS_cn[(n,t)]*100 for n in range(TS_NUM) for t in range(T))
+    # 1c
+    model.add_constraint(H_TS_dn[(n,t)]>=a_TS_dn[(n,t)]*0 for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(H_TS_dn[(n,t)]<=a_TS_dn[(n,t)]*100 for n in range(TS_NUM) for t in range(T))
+    # 1d
+    model.add_constraint(a_TS_cn[(n,t)]+a_TS_dn[(n,t)]<=1 for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(R_t.E_TS == (1-0.95)*R_t_minus_1.E_TS - H_TS_dn[(n,t)]+0.95*H_TS_cn[(n,t)] for n in range(TS_NUM) for t in range(T))
+    # 1n
+    # ....
+    # 1o
+    model.add_constraint(s_c[1].R.E_TS==s_c[T].R.E_TS)
+    # 2) CHP约束
+    # 2f
+    # model.add_constraint( H_CHP_n[(n,t)]== for n in range(TS_NUM) for t in range(T))
+    # 2g
+    # 2h
+    
+
+
 
 
 

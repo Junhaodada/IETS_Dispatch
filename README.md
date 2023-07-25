@@ -50,6 +50,6 @@ pip install requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple some-pa
 
 参考资料
 
-- [cplex教程](https://www.bilibili.com/video/BV1ot411X79Z/)
+- [cplex教程](https://www.bilibili.com/video/BV1ot411X79Z/) | [docplex教程](https://brucehan.top/2020/02/02/docplex/)
 
 - [cplex安装包](https://ibm.ent.box.com/s/wjuh81fmorssmwwoe4eg2spfl9xrakvn)

@@ -151,7 +151,7 @@ def ADP_MONOTONE(V0:V):
         for t in range(T):
             # step4: ...
             # ! V_set 与 20a 的V如何衔接
-            X_t_plus_1, obj_value = solve_milp(s_c, t)
+            X_t_plus_1, obj_value = solve_milp(s_c,t)
             v_t_n = V(t)
             v_t_n.R = s_c[t].R
             v_t_n.value=obj_value
