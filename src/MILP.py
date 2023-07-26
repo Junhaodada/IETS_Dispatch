@@ -1,5 +1,5 @@
 from docplex.mp.model import Model
-from ADP import X,V,S,W,R,C
+from ADP import X,V,S,W,R,C,E_TS_MAX,E_BS_MAX
 from utils import *
 from typing import List
 def solve_milp(s_c:List[S], t):
@@ -17,8 +17,8 @@ def solve_milp(s_c:List[S], t):
     t: int
         t是算法1循环迭代的时刻
     """
-    R_t_minus_1:R = s_c[t-1].R # t-1时刻的R
-    R_t:R = s_c[t].R # t时刻的R
+    # R_t_minus_1:R = s_c[t-1].R # t-1时刻的R
+    # R_t:R = s_c[t].R # t时刻的R
 
  
     # 创建模型
@@ -54,7 +54,7 @@ def solve_milp(s_c:List[S], t):
     Q_RES_MAX = 0
     G_NUM = 0
     ##########################################决策变量###############################################
-    # 模型中所有约束会使用到以下变量
+    # 模型中所有约束会使用到以下变量，与论文中的X_t完全对应，没有定义X_t_A，编写各个约束时自行添加即可
     H_CHP_n = {(n, t): model.continuous_var(lb=H_CHP_MIN, ub=H_CHP_MAX, name=f'H_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
     P_CHP_n = {(n, t): model.continuous_var(lb=P_CHP_MIN, ub=P_CHP_MAX, name=f'P_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
     a_BS_dn = {(n, t): model.binary_var(name=f'a_BS_d{n}_{t}') for n in range(BS_NUM) for t in range(T)}
@@ -67,7 +67,6 @@ def solve_milp(s_c:List[S], t):
     P_BS_cn = {(n, t): model.continuous_var(lb=P_BS_C_MIN, ub=P_BS_C_MAX, name=f'P_BS_c{n}_{t}') for n in range(BS_NUM) for t in range(T)}
     P_RES_n = {(n, t): model.continuous_var(lb=P_RES_MIN, ub=P_RES_MAX, name=f'P_RES_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
     Q_RES_n = {(n, t): model.continuous_var(lb=Q_RES_MIN, ub=Q_RES_MAX, name=f'Q_RES_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
-    m_TS_n = {(n, t): model.continuous_var(lb=Q_RES_MIN, ub=Q_RES_MAX, name=f'm_TS_{n}_{t}') for n in range(RES_NUM) for t in range(T)}
     # m_TDN
     # tem_TDN
     # u_i
@@ -102,6 +101,16 @@ def solve_milp(s_c:List[S], t):
     model.minimize(obj_expr)
     #####################################模型约束#######################################################################
     ####################################(1)TS约束#######################################################################
+    # 补充的决策变量
+    m_TS_MIN, m_TS_MAX = 0, 0
+    tem_TS_MIN, tem_TS_MAX = 20, 100
+    H_TS_MIN, H_TS_MAX = 0, 0
+    m_TS_n = {(n, t): model.continuous_var(lb=m_TS_MIN, ub=m_TS_MAX, name=f'm_TS_{n}_{t}') for n in range(TS_NUM) for t in range(T)}
+    tem_TS_n = {(n, t): model.continuous_var(lb=tem_TS_MIN, ub=tem_TS_MAX, name=f'tem_TS_{n}_{t}') for n in range(TS_NUM) for t in range(T)}
+    tem_TS_S_n = {(n, t): model.continuous_var(lb=tem_TS_MIN, ub=tem_TS_MAX, name=f'tem_TS_S_{n}_{t}') for n in range(TS_NUM) for t in range(T)}
+    tem_TS_R_n = {(n, t): model.continuous_var(lb=tem_TS_MIN, ub=tem_TS_MAX, name=f'tem_TS_S_{n}_{t}') for n in range(TS_NUM) for t in range(T)}
+    H_TS_n = {(n, t): model.continuous_var(lb=H_TS_MIN, ub=H_TS_MAX, name=f'H_TS_{n}_{t}') for n in range(TS_NUM) for t in range(T)}
+    # 补充的约束
     # 1a
     model.add_constraint(m_TS_n[(n,t)] == 0.8*a_TS_cn[(n,t)] -0.8*a_TS_dn[(n,t)] for n in range(TS_NUM) for t in range(T))
     # 1b
@@ -112,9 +121,33 @@ def solve_milp(s_c:List[S], t):
     model.add_constraint(H_TS_dn[(n,t)]<=a_TS_dn[(n,t)]*100 for n in range(TS_NUM) for t in range(T))
     # 1d
     model.add_constraint(a_TS_cn[(n,t)]+a_TS_dn[(n,t)]<=1 for n in range(TS_NUM) for t in range(T))
-    model.add_constraint(R_t.E_TS == (1-0.95)*R_t_minus_1.E_TS - H_TS_dn[(n,t)]+0.95*H_TS_cn[(n,t)] for n in range(TS_NUM) for t in range(T))
+    # 1f
+    model.add_constraint(s_c[t].R.E_TS == (1-0.95)*s_c[t].R.E_TS - H_TS_dn[(n,t)]+0.95*H_TS_cn[(n,t)] for n in range(TS_NUM) for t in range(T))
+    # 1g
+    C_wt, p_water, V_TS_n, tem_TS = 4.182/3600, 1000, 2.46, 30
+    model.add_constraint(s_c[t].R.E_TS==C_wt*p_water*V_TS_n*(tem_TS_n[(n,t)]-tem_TS) for n in range(TS_NUM) for t in range(T))
+    # 1h
+    model.add_constraint(s_c[t].R.E_TS>=0 for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(s_c[t].R.E_TS<=E_TS_MAX for n in range(TS_NUM) for t in range(T))
+    # 1i
+    model.add_constraint(tem_TS_n[(n,t)]>=0 for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(tem_TS_n[(n,t)]<=tem_TS_MAX for n in range(TS_NUM) for t in range(T))
+    # 1j
+    model.add_constraint(tem_TS_S_n[(n,t)]>=a_TS_cn[(n,t)]*tem_TS_n[(n,t)] for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(tem_TS_R_n[(n,t)]>=a_TS_cn[(n,t)]*tem_TS_n[(n,t)] for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(tem_TS_S_n[(n,t)]<=a_TS_dn[(n,t)]*tem_TS_n[(n,t)]+(1-a_TS_dn[(n,t)])*tem_TS_MAX for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(tem_TS_R_n[(n,t)]<=a_TS_dn[(n,t)]*tem_TS_n[(n,t)]+(1-a_TS_dn[(n,t)])*tem_TS_MAX for n in range(TS_NUM) for t in range(T))
+    # 1k
+    model.add_constraint(H_TS_dn[(n,t)]==a_TS_dn[(n,t)]*0.8*C_wt*(tem_TS_S_n[(n,t)]-tem_TS_R_n[(n,t)]) for n in range(TS_NUM) for t in range(T))
+    # 1l
+    model.add_constraint(H_TS_cn[(n,t)]==a_TS_cn[(n,t)]*0.8*C_wt*(tem_TS_S_n[(n,t)]-tem_TS_R_n[(n,t)]) for n in range(TS_NUM) for t in range(T))
+    # 1m
+    model.add_constraint(H_TS_n[(n,t)]==H_TS_cn[(n,t)]-H_TS_dn[(n,t)] for n in range(TS_NUM) for t in range(T))
     # 1n
-    # ......
+    model.add_constraint(tem_TS_S_n[(n,t)] >= 20 for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(tem_TS_S_n[(n,t)] <= 100 for n in range(TS_NUM) for t in range(T))    
+    model.add_constraint(tem_TS_R_n[(n,t)] >= 20 for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(tem_TS_R_n[(n,t)] <= 100 for n in range(TS_NUM) for t in range(T))
     # 1o
     model.add_constraint(s_c[1].R.E_TS==s_c[T].R.E_TS)
     ##########################################(2)CHP约束##################################################################
