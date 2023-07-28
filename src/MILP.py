@@ -1,5 +1,5 @@
 from docplex.mp.model import Model
-from ADP import X,V,S,W,R,C,E_TS_MAX,E_BS_MAX
+from ADP import X,V,S,W,R,C,E_TS_MAX,E_BS_MAX,E_TS_MIN,E_BS_MIN
 from utils import *
 from typing import List
 def solve_milp(s_c:List[S], t):
@@ -100,7 +100,7 @@ def solve_milp(s_c:List[S], t):
     # 最小化目标函数
     model.minimize(obj_expr)
     #####################################模型约束#######################################################################
-    ####################################(1)TS约束#######################################################################
+    ####################################!(1)TS约束✔#######################################################################
     # 补充的决策变量
     m_TS_MIN, m_TS_MAX = 0, 0
     tem_TS_MIN, tem_TS_MAX = 20, 100
@@ -150,31 +150,85 @@ def solve_milp(s_c:List[S], t):
     model.add_constraint(tem_TS_R_n[(n,t)] <= 100 for n in range(TS_NUM) for t in range(T))
     # 1o
     model.add_constraint(s_c[1].R.E_TS==s_c[T].R.E_TS)
-    ##########################################(2)CHP约束##################################################################
+    ##########################################!(2)CHP约束✔##################################################################
+    # 补充的决策变量
+    CHP_P_NUM = 0
+    sigma_CHP_n_c = {(n, t, c): model.continuous_var(lb=0, name=f'sigma_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T) for c in range(CHP_P_NUM)}
+    H_CHP_n_c = {c:{(n, t): model.continuous_var(lb=H_CHP_MIN, ub=H_CHP_MAX, name=f'H_CHP_{n}_{t}_{c}') for n in range(CHP_NUM) for t in range(T)} for c in range(CHP_P_NUM)}
+    P_CHP_n_c = {c:{(n, t): model.continuous_var(lb=P_CHP_MIN, ub=P_CHP_MAX, name=f'P_CHP_{n}_{t}_{c}') for n in range(CHP_NUM) for t in range(T)} for c in range(CHP_P_NUM)}
+    Q_CHP_MIN,Q_CHP_MAX =0,100
+    Q_CHP_n = {(n, t): model.continuous_var(lb=Q_CHP_MIN, ub=Q_CHP_MAX, name=f'Q_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
+    tem_CHP_MIN, tem_CHP_MAX = 20, 100
+    tem_CHP_n = {(n, t): model.continuous_var(lb=tem_CHP_MIN, ub=tem_CHP_MAX, name=f'tem_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
+    tem_CHP_S_n = {(n, t): model.continuous_var(lb=tem_CHP_MIN, ub=tem_CHP_MAX, name=f'tem_CHP_S_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
+    tem_CHP_R_n = {(n, t): model.continuous_var(lb=tem_CHP_MIN, ub=tem_CHP_MAX, name=f'tem_CHP_S_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
+    m_CHP_MIN, m_CHP_MAX = 0, 0
+    m_CHP_n = {(n, t): model.continuous_var(lb=m_CHP_MIN, ub=m_CHP_MAX, name=f'm_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
+    C_CHP_MIN,C_CHP_MIN=0,0
+    C_CHP_n = {(n, t): model.continuous_var(lb=H_CHP_MIN, ub=H_CHP_MAX, name=f'C_CHP_{n}_{t}') for n in range(CHP_NUM) for t in range(T)}
+    # 补充的约束
+    # 2a
+    model.add_constraint(H_CHP_n[(n,t)]==model.sum(sigma_CHP_n_c[(n,t,c)]*H_CHP_n_c[c][(n,t)] for c in range(CHP_P_NUM)) for n in range(CHP_NUM) for t in range(T))
+    # 2b
+    model.add_constraint(P_CHP_n[(n,t)]==model.sum(sigma_CHP_n_c[(n,t,c)]*P_CHP_n_c[c][(n,t)] for c in range(CHP_P_NUM)) for n in range(CHP_NUM) for t in range(T))
+    # 2c
+    model.add_constraint(model.sum(sigma_CHP_n_c[(n,t,c)])==1 for n in range(CHP_NUM) for t in range(T) for c in range(CHP_P_NUM))
+    # 2d 
+    # 见sigma_CHP_n_c定义
+    # 2e
+    # 见Q_CHP_n定义
     # 2f
-    # model.add_constraint( H_CHP_n[(n,t)]== for n in range(TS_NUM) for t in range(T))
+    model.add_constraint(H_CHP_n[(n,t)]==C_wt*m_CHP_n[(n,t)]*(tem_CHP_S_n[(n,t)]-tem_CHP_R_n[(n,t)]) for n in range(CHP_NUM) for t in range(T))
     # 2g
+    # 见tem_CHP_n定义
     # 2h
-    ###########################################(3)热负载约束###############################################################
-    # input your code
-
-
-    # end input
+    a_n= [0, 0.018, 0.015, 0.00024, 0.0013, 0.0013]
+    model.add_constraint(C_CHP_n[(n,t)]==a_n[5]*P_CHP_n[(n,t)]**2+a_n[4]*H_CHP_n[(n,t)]**2+a_n[3]*P_CHP_n[(n,t)]*H_CHP_n[(n,t)]+a_n[2]*P_CHP_n[(n,t)]+a_n[1]*H_CHP_n[(n,t)]+a_n[0] for n in range(CHP_NUM) for t in range(T))
+    ###########################################!(3)热负载约束✔###############################################################
+    # 补充的决策变量
+    TL_NUM = 0
+    H_TL_MIN,H_TL_MAX=0,0
+    H_TL_n = {(n, t): model.continuous_var(lb=H_TL_MIN, ub=H_TL_MAX, name=f'H_TL_{n}_{t}') for n in range(TL_NUM) for t in range(T)}
+    tem_TL_MIN, tem_TL_MAX = 20, 100
+    tem_TL_n = {(n, t): model.continuous_var(lb=tem_TL_MIN, ub=tem_TL_MAX, name=f'tem_TL_{n}_{t}') for n in range(TL_NUM) for t in range(T)}
+    tem_TL_S_n = {(n, t): model.continuous_var(lb=tem_TL_MIN, ub=tem_TL_MAX, name=f'tem_TL_S_{n}_{t}') for n in range(TL_NUM) for t in range(T)}
+    tem_TL_R_n = {(n, t): model.continuous_var(lb=tem_TL_MIN, ub=tem_TL_MAX, name=f'tem_TL_S_{n}_{t}') for n in range(TL_NUM) for t in range(T)}
+    m_TL_MIN, m_TL_MAX = 0, 0
+    m_TL_n = {(n, t): model.continuous_var(lb=m_TL_MIN, ub=m_TL_MAX, name=f'm_TL_{n}_{t}') for n in range(TL_NUM) for t in range(T)}
+    # 3a
+    model.add_constraint(H_TL_n[(n,t)]==C_wt*m_TL_n[(n,t)]*(tem_TL_S_n[(n,t)]-tem_TL_R_n[(n,t)]) for n in range(TL_NUM) for t in range(T))
+    # 3b
+    # 见tem_TL_S_n, tem_TL_R_n定义
     ###########################################(4)TDN/热配网约束###########################################################
     # input your code
 
 
     # end input
-    ############################################(5)RES约束#################################################################
-    # input your code
-
-
-    # end input
-    ###########################################(6)BS约束####################################################################
-    # input your code
-
-
-    # end input
+    ############################################!(5)RES约束✔#################################################################
+    # 5a
+    # 见P_RES_n定义
+    # 5b
+    # delete
+    ###########################################!(6)BS约束✔####################################################################
+    # 补充的决策变量
+    C_BS_MIN,C_BS_MAX=0,0
+    C_BS_n = {(n, t): model.continuous_var(lb=C_BS_MIN, ub=C_BS_MAX, name=f'C_BS_{n}_{t}') for n in range(BS_NUM) for t in range(T)}
+    # 6a
+    model.add_constraint(P_BS_cn[(n,t)]<=a_BS_cn[(n,t)]*P_BS_C_MAX for n in range(BS_NUM) for t in range(T))
+    # 6b
+    model.add_constraint(P_BS_dn[(n,t)]<=a_BS_dn[(n,t)]*P_BS_D_MAX for n in range(BS_NUM) for t in range(T))
+    # 6c
+    model.add_constraint(s_c[t].R.E_BS>=E_BS_MIN)
+    model.add_constraint(s_c[t].R.E_BS<=E_BS_MAX)
+    # 6d
+    model.add_constraint(s_c[t].R.E_BS==s_c[t-1].R.E_BS+0.98*P_BS_cn[(n,t)]-P_BS_dn[(n,t)]/0.98 for n in range(BS_NUM) for t in range(T))
+    # 6e
+    model.add_constraint(s_c[t].R.E_BS==s_c[T].R.E_BS for n in range(BS_NUM) for t in range(T))
+    model.add_constraint(0.5*E_BS_MAX==s_c[T].R.E_BS for n in range(BS_NUM) for t in range(T))
+    # 6f
+    model.add_constraint(a_BS_dn[(n,t)]+a_BS_cn[(n,t)]<=1 for n in range(BS_NUM) for t in range(T))
+    # 6g
+    model.add_constraint(C_BS_n[(n,t)]==0.01*(P_BS_cn[(n,t)]+P_BS_dn[(n,t)]) for n in range(BS_NUM) for t in range(T))
     ##########################################(7)EDN/电配网约束##############################################################
     # input your code
 

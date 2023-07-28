@@ -102,6 +102,8 @@ T_NODE_NUM = 5 # thermal nodes num
 SAMPLE_SIZE = 1 # 1000
 E_TS_MAX = 200 # KWh
 E_BS_MAX = 80 # KWh
+E_TS_MIN = 0 # KWh
+E_BS_MIN = 0 # KWh
 ALPHA = 0.1
 INF = 1e6
 
