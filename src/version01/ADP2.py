@@ -18,6 +18,8 @@ for i in range(SAMPLE_SIZE):
 
 W_sets: List[W] = []
 W_data = pd.read_excel('W_data.xlsx', sheet_name='Sheet1')
+# 热负载比例
+TL_LOAD_RATIO = [0, 0, 0.3, 0.3, 0.4]
 for i in range(SAMPLE_SIZE):
     W_set = W()
     for t in range(T):
@@ -26,8 +28,9 @@ for i in range(SAMPLE_SIZE):
         for i in range(E_BUS_NUM):
             W_set.P_EL[(i, t)] = W_data.loc[t, 'P_EL']
             W_set.Q_EL[(i, t)] = W_data.loc[t, 'Q_EL']
+
         for n in range(TL_NUM):
-            W_set.H_TL[(n, t)] = W_data.loc[t, 'H_TL']
+            W_set.H_TL[(n, t)] = W_data.loc[t, 'H_TL'] * TL_LOAD_RATIO[n]
         for n in range(RES_NUM):
             W_set.P_RES[(i, t)] = W_data.loc[t, 'P_RES']
             W_set.Q_RES[(i, t)] = W_data.loc[t, 'Q_RES']
