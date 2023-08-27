@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 from docplex.mp.model import Model
+from docplex.mp.solution import SolveSolution
 from typing import List
-
 
 class W:
     """
@@ -55,7 +55,7 @@ def init_data():
             R_set.E_TS[t] = np.random.uniform(E_TS_MIN, E_TS_MAX)
             R_set.E_BS[t] = np.random.uniform(E_BS_MIN, E_BS_MAX)
         R_sets.append(R_set)
-    W_data = pd.read_excel('W_data.xlsx', sheet_name='Sheet1')
+    W_data = pd.read_excel('./data/W_data.xlsx', sheet_name='Sheet1')
     for i in range(SAMPLE_SIZE):
         W_set = W()
         for t in range(T):
@@ -205,15 +205,27 @@ def solve_milp(R_set: R, W_set: W, t):
     model.add_constraint(H_AC[t] * a_AC + P_EC[t] * a_EC == W_set.C_TL[t])
 
     # 目标函数
-    obj_expr = C_EP[t] + C_CHP[t] + C_BS[t]
+    obj_expr = C_EP[t] + C_CHP[t] + C_BS[t]+C_CHP[t]
 
     # 求解
     model.minimize(obj_expr)
     print('MILP求解结果如下:')
-    solution = model.solve()
+    solution:SolveSolution = model.solve()
     if solution:
-        print(solution)
-        print(model.get_solve_details())
+        # print(solution.get_value('a_BS_c_12'))
+        # print(model.iter_variables())
+        print('objective value: ',solution.objective_value)
+        print('decision variables: ')
+        for var in model.iter_variables():
+            print(f"{var}: {solution[var]}")
+        variable_data = []
+
+        for var in model.iter_variables():
+            variable_data.append({"Variable": var, "Value": solution[var]})
+
+        df = pd.DataFrame(variable_data)
+        df.to_excel("./data/Solution.xlsx", index=False)
+        # print(model.get_solve_details())
     else:
         print(model.get_solve_details())
     return solution

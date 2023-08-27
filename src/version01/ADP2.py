@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import List
 from params import *
-from MILP import *
+from milp import *
 
 # 生成样本
 R_sets: List[R] = []

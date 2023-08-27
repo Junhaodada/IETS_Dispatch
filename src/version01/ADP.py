@@ -7,7 +7,7 @@ Small size IETS is with 6 electricity buses and 5 thermal nodes, 1 BS, and 1 TS.
 import numpy as np
 import pandas as pd
 from typing import List
-from MILP import solve_milp
+from milp import solve_milp
 from utils import *
 
 
