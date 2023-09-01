@@ -1,4 +1,4 @@
-from milp import *
+from MILP import *
 
 
 # 算法2

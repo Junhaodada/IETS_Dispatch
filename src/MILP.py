@@ -4,6 +4,7 @@ from docplex.mp.model import Model
 from docplex.mp.solution import SolveSolution
 from typing import List
 
+
 class W:
     """
     Exogenous information `W_t` of IETS includes stochastic processes of RES generation,
@@ -36,6 +37,8 @@ E_TS_MAX = 200  # KWh
 E_TS_MIN = 0  # KWh
 E_BS_MAX = 80  # KWh
 E_BS_MIN = 0  # KWh
+
+
 # TL_LOAD_RATIO = 0.98  # 热负载比例
 
 
@@ -51,7 +54,7 @@ def init_data():
     for i in range(SAMPLE_SIZE):
         R_set = R()
         for t in range(T):
-            np.random.seed(0)
+            # np.random.seed(0)
             R_set.E_TS[t] = np.random.uniform(E_TS_MIN, E_TS_MAX)
             R_set.E_BS[t] = np.random.uniform(E_BS_MIN, E_BS_MAX)
         R_sets.append(R_set)
@@ -70,7 +73,7 @@ def init_data():
 
 
 # MILP model
-def solve_milp(R_set: R, W_set: W, t):
+def solve_milp(R_set: R, W_set: W, t, writer):
     """
     solve MILP model
 
@@ -205,37 +208,64 @@ def solve_milp(R_set: R, W_set: W, t):
     model.add_constraint(H_AC[t] * a_AC + P_EC[t] * a_EC == W_set.C_TL[t])
 
     # 目标函数
-    obj_expr = C_EP[t] + C_CHP[t] + C_BS[t]+C_CHP[t]
+    obj_expr = C_EP[t] + C_CHP[t] + C_BS[t]
 
     # 求解
     model.minimize(obj_expr)
     print('MILP求解结果如下:')
-    solution:SolveSolution = model.solve()
+    solution: SolveSolution = model.solve()
+    variable_data = []
     if solution:
         # print(solution.get_value('a_BS_c_12'))
         # print(model.iter_variables())
-        print('objective value: ',solution.objective_value)
-        print('decision variables: ')
-        for var in model.iter_variables():
-            print(f"{var}: {solution[var]}")
-        variable_data = []
+        print('objective value: ', solution.objective_value)
+        # print('decision variables: ')
+        # for var in model.iter_variables():
+        #     print(f"{var}: {solution[var]}")
 
         for var in model.iter_variables():
-            variable_data.append({"Variable": var, "Value": solution[var]})
+            variable_data.append({"Variable": var.name, "Value": solution[var]})
 
-        df = pd.DataFrame(variable_data)
-        df.to_excel("./data/Solution.xlsx", index=False)
         # print(model.get_solve_details())
     else:
         print(model.get_solve_details())
-    return solution
+    return pd.DataFrame(variable_data)
 
 
 if __name__ == '__main__':
     R_sets, W_sets = init_data()
     print('测试模拟数据:')
-    print(R_sets[0].E_BS[0])
-    print(R_sets[0].E_TS[0])
+    # print(R_sets[0].E_BS[0])
+    # print(R_sets[0].E_TS[0])
+    print(W_sets[0].P_EL[0])
     print(W_sets[0].H_TL[0])
-    print(W_sets[0].H_TL[0])
-    solve_milp(R_sets[0], W_sets[0], 2)
+
+    all_data = []
+    columns_name = None
+    writer = pd.ExcelWriter('./data/Solution.xlsx')
+    for t in range(1, T - 1):
+        variable_data = solve_milp(R_sets[0], W_sets[0], t + 1, writer)
+        # print(variable_data.head())
+        if columns_name is None:
+            columns_name = variable_data['Variable']
+            all_data.append(columns_name.tolist())
+
+        all_data.append(variable_data['Value'].tolist())
+        print(variable_data['Value'].tolist())
+
+        # 状态转移
+        eta_TS_d, eta_TS_c = 0.01, 0.98
+        R_sets[0].E_TS[t] = (1 - eta_TS_d) * R_sets[0].E_TS[t - 1] - float(variable_data[variable_data['Variable'] ==
+                                                                                         f'H_TS_d_{t}'][
+                                                                               'Value'].values) + eta_TS_c * \
+                            float(variable_data[variable_data['Variable'] == f'H_TS_c_{t}']['Value'].values)
+
+        eta_BS_c, eta_BS_d = 0.98, 0.98
+        # print(type(float(variable_data[variable_data['Variable'] == f'P_BS_c_{t}']['Value'].values)))
+        R_sets[0].E_BS[t] = R_sets[0].E_BS[t - 1] + eta_BS_c * \
+                            float(variable_data[variable_data['Variable'] == f'P_BS_c_{t}']['Value'].values) - \
+                            float(variable_data[variable_data['Variable'] == f'P_BS_d_{t}']['Value'].values) / eta_BS_d
+    df = pd.DataFrame(all_data)
+
+    df.to_excel(writer, header=False)
+

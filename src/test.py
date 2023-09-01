@@ -1,5 +1,5 @@
-from docplex.mp.model import Model
+import pandas as pd
+import numpy as np
 
-m = Model()
-m.binary_var(name='f_1_2')
-m.binary_var(name='f_1_2_1')
+
+print(np.random.normal(0,0.01))
