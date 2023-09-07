@@ -2,3 +2,4 @@ numpy
 pandas
 cplex
 docplex
+scikit-learn

@@ -324,5 +324,5 @@ def get_dispatch(R_sets: List[R], W_sets: List[W]):
 
 if __name__ == '__main__':
     R_sets, W_sets = init_data()
-    # get_dispatch(R_sets, W_sets)
-    cluster_data(R_sets, W_sets)
+    get_dispatch(R_sets, W_sets)
+    # cluster_data(R_sets, W_sets)
