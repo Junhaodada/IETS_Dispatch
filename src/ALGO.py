@@ -1,10 +1,10 @@
-from MILP4 import *
+from MILP import *
 import matplotlib.pyplot as plt
 
 
 # 算法2
 def il_adp(R_sets, W_sets):
-    """算法2"""
+    """IL算法"""
     train_samples = (R_sets[:N2], W_sets[:N2])
     # 读取solve_milp_all求解得到的R和X，聚类后作为专家经验
     solution_list = []
@@ -49,7 +49,7 @@ def meth_func(z, r: R, t, r_v, t_v):
 
 
 def monotone_adp(R_sets, W_sets):
-    """算法1"""
+    """adp算法"""
     # R_sets, W_sets = init_data(mode='w')
     train_samples = (R_sets, W_sets)
     c_data = []
@@ -79,25 +79,49 @@ def monotone_adp(R_sets, W_sets):
     # 绘制目标值训练趋势图
     plt.plot([i for i in range(N)], c_data)
     plt.show()
+
     # 画一下v的变化
+    # v_data = []
+    # for i in range(E_BS_MAX):
+    #     v_data.append(v_table.get_value2((10, i), 10))
+    #
+    # plt.plot([i for i in range(E_BS_MAX)], v_data)
+    # plt.show()
 
-    v_data = []
-    for i in range(E_BS_MAX):
-        v_data.append(v_table.get_value2((10, i), 10))
 
-    plt.plot([i for i in range(E_BS_MAX)], v_data)
-    plt.show()
+def dispatch():
+    """
+    实时调度
+    """
+    print('----------------ADP-IL调度--------------------')
+    # 初始化24h的系统状态
+    W_data = pd.read_excel('./data/W_data.xlsx', sheet_name='Sheet1')
+    W_t = W()
+    R_t = R()
+    for t in range(T):
+        W_t.E_PRICE[t] = W_data.loc[t, 'E_PRICE']
+        W_t.P_EL = W_data.loc[t, 'P_EL']
+        W_t.H_TL = W_data.loc[t, 'H_TL']
+        W_t.C_TL = W_data.loc[t, 'C_TL']
+        W_t.P_RES = W_data.loc[t, 'P_RES']
+    R_t.E_BS[0] = np.random.uniform(E_BS_MIN, E_BS_MAX)
+    R_t.E_TS[0] = np.random.uniform(E_TS_MIN, E_TS_MAX)
+    print('系统状态初始化完毕！开始实时调度……')
+    # 输入状态，输出调度
+    for t in range(T - 1):
+        # w模式，保存t时刻的调度结果到Dispatch文件夹下
+        solution = solve_milp_v(R_t, W_t, t + 1, mode='w', data_path=f'./data/Dispatch/dispatch_result_{t + 1}.xlsx')
+        print(f't={t + 1}时刻调度结果求解成功！')
 
 
-# 主函数
 def algo_main():
     # 模拟数据
     R_sets, W_sets = init_data()
-    # 算法1训练值函数
+    # 训练值函数
     il_adp(R_sets, W_sets)
     monotone_adp(R_sets, W_sets)
     # 实时调度
-    # ...
+    dispatch()
 
 
 if __name__ == '__main__':

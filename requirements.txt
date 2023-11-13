@@ -2,4 +2,5 @@ numpy
 pandas
 cplex
 docplex
+matplotlib
 scikit-learn
