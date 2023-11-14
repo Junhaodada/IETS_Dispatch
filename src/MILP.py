@@ -101,7 +101,7 @@ class V:
 # 创建值函数
 # paramters
 T = 24
-N = 200
+N = 300
 N2 = 5
 SAMPLE_SIZE = 1000  # 1000
 E_TS_MAX = 200  # KWh
@@ -557,7 +557,7 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
         R_set.E_TS[t] = solution['E_TS_t']
         return solution
     else:
-        print('无解……')
+        print('整数规划无解……')
         return solution
 
 

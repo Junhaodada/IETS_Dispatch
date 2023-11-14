@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 # 算法2
 def il_adp(R_sets, W_sets):
     """IL算法"""
+
+    print('----------------IL算法--------------------')
     train_samples = (R_sets[:N2], W_sets[:N2])
     # 读取solve_milp_all求解得到的R和X，聚类后作为专家经验
     solution_list = []
@@ -50,6 +52,10 @@ def meth_func(z, r: R, t, r_v, t_v):
 
 def monotone_adp(R_sets, W_sets):
     """adp算法"""
+
+    print('----------------ADP算法--------------------')
+    print('adp算法开始执行...')
+    print(f'epoch总数: {N}')
     # R_sets, W_sets = init_data(mode='w')
     train_samples = (R_sets, W_sets)
     c_data = []
@@ -61,8 +67,6 @@ def monotone_adp(R_sets, W_sets):
             print(f'-------------------------epoch{n}-------------------------------')
         c_tmp = 0
         for t in range(T - 1):
-            if n % 50 == 0:
-                print(f'epoch {n}:t={t} R{t}={{{r.E_TS[t]},{r.E_BS[t]}}} ==> {v_table.get_value(r, t)}')
             solution = solve_milp_v(r, w, t + 1)
             c_sum = solution['C_BS_t'] + solution['C_EP_t'] + solution['C_CHP_t']
             # c_sum = solution.objective_value
@@ -75,7 +79,11 @@ def monotone_adp(R_sets, W_sets):
             for t_v in range(T):
                 r_v = (r.E_TS[t_v], r.E_BS[t_v])
                 v_table.set_value(r, t_v, meth_func(z, r, t, r_v, t_v))
+            if n % 50 == 0:
+                print(
+                    f'epoch {n}:t={t + 1} R{t + 1}={{{r.E_TS[t + 1]},{r.E_BS[t + 1]}}} ==> {v_table.get_value(r, t + 1)}')
         c_data.append(c_tmp)
+    print('adp算法执行完毕')
     # 绘制目标值训练趋势图
     plt.plot([i for i in range(N)], c_data)
     plt.show()
