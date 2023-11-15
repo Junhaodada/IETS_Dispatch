@@ -1,3 +1,5 @@
+import pandas as pd
+
 from MILP import *
 import matplotlib.pyplot as plt
 
@@ -5,7 +7,6 @@ import matplotlib.pyplot as plt
 # 算法2
 def il_adp(R_sets, W_sets):
     """IL算法"""
-
     print('----------------IL算法--------------------')
     train_samples = (R_sets[:N2], W_sets[:N2])
     # 读取solve_milp_all求解得到的R和X，聚类后作为专家经验
@@ -52,7 +53,6 @@ def meth_func(z, r: R, t, r_v, t_v):
 
 def monotone_adp(R_sets, W_sets):
     """adp算法"""
-
     print('----------------ADP算法--------------------')
     print('adp算法开始执行...')
     print(f'epoch总数: {N}')
@@ -63,8 +63,7 @@ def monotone_adp(R_sets, W_sets):
         sample_index = n % SAMPLE_SIZE
         r = train_samples[0][sample_index]
         w = train_samples[1][sample_index]
-        if n % 50 == 0:
-            print(f'-------------------------epoch{n}-------------------------------')
+        print(f'-------------------------epoch{n}-------------------------------')
         c_tmp = 0
         for t in range(T - 1):
             solution = solve_milp_v(r, w, t + 1)
@@ -79,14 +78,21 @@ def monotone_adp(R_sets, W_sets):
             for t_v in range(T):
                 r_v = (r.E_TS[t_v], r.E_BS[t_v])
                 v_table.set_value(r, t_v, meth_func(z, r, t, r_v, t_v))
-            if n % 50 == 0:
-                print(
-                    f'epoch {n}:t={t + 1} R{t + 1}={{{r.E_TS[t + 1]},{r.E_BS[t + 1]}}} ==> {v_table.get_value(r, t + 1)}')
+            print(
+                f'epoch {n}:t={t + 1} R{t + 1}={{{r.E_TS[t + 1]},{r.E_BS[t + 1]}}} ==> {v_table.get_value(r, t + 1)}')
         c_data.append(c_tmp)
     print('adp算法执行完毕')
+
+    # 保存 c_data
+    c_data_df = pd.Series(c_data)
+    c_data_df.to_excel("cost_value.xlsx", index=False)
+    print('cost value 保存成功: cost_value.xlsx')
+
     # 绘制目标值训练趋势图
-    plt.plot([i for i in range(N)], c_data)
-    plt.show()
+    # plt.plot([i for i in range(N)], c_data)
+    # plt.savefig('./cost_value.jpg')
+    # print('迭代图保存为：cost_value.jpg')
+    # plt.show()
 
     # 画一下v的变化
     # v_data = []
@@ -108,10 +114,10 @@ def dispatch():
     R_t = R()
     for t in range(T):
         W_t.E_PRICE[t] = W_data.loc[t, 'E_PRICE']
-        W_t.P_EL = W_data.loc[t, 'P_EL']
-        W_t.H_TL = W_data.loc[t, 'H_TL']
-        W_t.C_TL = W_data.loc[t, 'C_TL']
-        W_t.P_RES = W_data.loc[t, 'P_RES']
+        W_t.P_EL[t] = W_data.loc[t, 'P_EL']
+        W_t.H_TL[t] = W_data.loc[t, 'H_TL']
+        W_t.C_TL[t] = W_data.loc[t, 'C_TL']
+        W_t.P_RES[t] = W_data.loc[t, 'P_RES']
     R_t.E_BS[0] = np.random.uniform(E_BS_MIN, E_BS_MAX)
     R_t.E_TS[0] = np.random.uniform(E_TS_MIN, E_TS_MAX)
     print('系统状态初始化完毕！开始实时调度……')

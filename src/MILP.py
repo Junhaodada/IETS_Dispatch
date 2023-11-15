@@ -101,7 +101,7 @@ class V:
 # 创建值函数
 # paramters
 T = 24
-N = 300
+N = 100
 N2 = 5
 SAMPLE_SIZE = 1000  # 1000
 E_TS_MAX = 200  # KWh
@@ -563,5 +563,6 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
 
 if __name__ == '__main__':
     R_sets, W_sets = init_data(mode='w')
-    for i in range(SAMPLE_SIZE):
-        solve_milp_all(R_sets[i], W_sets[i], data_path=f'./data/Solution/Solution_{i}.xlsx')
+    test_size = 5
+    for i in range(test_size):
+        solve_milp_all(R_sets[i], W_sets[i], mode='w', data_path=f'./data/Solution/Solution_{i}.xlsx')
