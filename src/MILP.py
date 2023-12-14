@@ -18,7 +18,8 @@ class W:
         self.H_TL = {t: 0 for t in range(T)}  # thermal load in node
         self.C_TL = {t: 0 for t in range(T)}  # cool load in node
         # self.TEM_AM = {t: 0 for t in range(T)}  # ambient temperature
-        self.P_RES = {t: 0 for t in range(T)}  # Upper active power output limit of RES
+        # Upper active power output limit of RES
+        self.P_RES = {t: 0 for t in range(T)}
 
 
 class R:
@@ -43,18 +44,18 @@ class V:
     X_t = {P_PG,H_CHP,P_CHP,a_BS_c,a_BS_d,P_BS_c,P_BS_d,
     a_TS_c,a_TS_d, H_TS_c,H_TS_d,P_PV}
     ---------------------------------------------------
-    P_PG t时买入的电 [0,~)
-    P_CHP t时CHP的电功输出 [0,~)
-    H_CHP t时CHP的热能输出 [0,~)
-    a_BS_d BS的放电状态 {0,1}
-    a_BS_c BS的充电状态 {0,1}
-    P_BS_d BS的放电量 [0,24]
-    P_BS_c BS的充电量 [0,24]
-    a_TS_d TS的放热状态 {0,1}
-    a_TS_c TS的储热状态 {0,1}
-    H_TS_d TS的放热量 [0,100]
-    H_TS_c TS的储热量 [0,100]
-    P_RES RES放电量 [0,W_set.P_RES[t]]
+    P_PG t 时买入的电 [0,~)
+    P_CHP t 时 CHP 的电功输出 [0,~)
+    H_CHP t 时 CHP 的热能输出 [0,~)
+    a_BS_d BS 的放电状态 {0,1}
+    a_BS_c BS 的充电状态 {0,1}
+    P_BS_d BS 的放电量 [0,24]
+    P_BS_c BS 的充电量 [0,24]
+    a_TS_d TS 的放热状态 {0,1}
+    a_TS_c TS 的储热状态 {0,1}
+    H_TS_d TS 的放热量 [0,100]
+    H_TS_c TS 的储热量 [0,100]
+    P_RES RES 放电量 [0,W_set.P_RES[t]]
     P_EC 冷 [0,88.1]
     H_AC 冷 [0,168]
     # Q_EC
@@ -96,17 +97,20 @@ class V:
 
     def to_csv(self):
         """
-        导出为csv格式
+        导出为 csv 格式
         """
         # 转换字典为 DataFrame
-        df = pd.DataFrame(list(self.value_table.items()), columns=['(E_TS, E_BS, t)', 'Value'])
+        df = pd.DataFrame(list(self.value_table.items()),
+                          columns=['(E_TS, E_BS, t)', 'Value'])
 
         # 拆分 '(E_TS, E_BS, t)' 列为三列
-        df[['E_TS', 'E_BS', 't']] = pd.DataFrame(df['(E_TS, E_BS, t)'].tolist(), index=df.index)
+        df[['E_TS', 'E_BS', 't']] = pd.DataFrame(
+            df['(E_TS, E_BS, t)'].tolist(), index=df.index)
         df.drop(['(E_TS, E_BS, t)'], axis=1, inplace=True)
 
         # 使用 pivot 重新排列 DataFrame
-        df_pivot = df.pivot(index='t', columns=['E_TS', 'E_BS'], values='Value')
+        df_pivot = df.pivot(index='t', columns=[
+                            'E_TS', 'E_BS'], values='Value')
 
         # 将 DataFrame 保存为 CSV 文件
         df_pivot.to_csv('data/v_table.csv')
@@ -121,7 +125,7 @@ class V:
 T = 24
 N = 10
 N2 = 5
-SAMPLE_SIZE = 1000  # 1000
+SAMPLE_SIZE = 5  # 1000
 E_TS_MAX = 200  # KWh
 E_TS_MIN = 0  # KWh
 E_BS_MAX = 80  # KWh
@@ -152,10 +156,10 @@ def init_data(mode='r'):
         # R_sets.append(R_set)
         R_sets.append(R())
         np.random.seed(10)
-        R_sets[i].E_BS[0] = np.random.uniform(E_BS_MIN, E_BS_MAX)
-        R_sets[i].E_TS[0] = np.random.uniform(E_TS_MIN, E_TS_MAX)
-        # R_sets[i].E_TS[0] = 150
-        # R_sets[i].E_BS[0] = 60
+        # R_sets[i].E_BS[0] = np.random.uniform(E_BS_MIN, E_BS_MAX)
+        # R_sets[i].E_TS[0] = np.random.uniform(E_TS_MIN, E_TS_MAX)
+        R_sets[i].E_TS[0] = 150
+        R_sets[i].E_BS[0] = 60
     W_data = pd.read_excel('./data/W_data.xlsx', sheet_name='Sheet1')
     LOAD_STD = 0.03
     PRICE_STD = 0.1
@@ -191,7 +195,7 @@ def to_df(obj: object, filename: str):
     for name, value in obj.__dict__.items():
         df[name] = pd.Series(list(value.values()))
     df.to_excel(f'./data/sample/{filename}.xlsx', index=False)
-    print(f'{filename}.xlsx创建成功!')
+    print(f'{filename}.xlsx 创建成功！')
     return df
 
 
@@ -236,8 +240,10 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
     model = Model(name='IETS MILP MODEL')
 
     # 决策变量
-    E_TS = {t: model.continuous_var(lb=E_TS_MIN, ub=E_TS_MAX, name=f'E_TS_{t}') for t in range(T)}
-    E_BS = {t: model.continuous_var(lb=E_BS_MIN, ub=E_BS_MAX, name=f'E_BS_{t}') for t in range(T)}
+    E_TS = {t: model.continuous_var(
+        lb=E_TS_MIN, ub=E_TS_MAX, name=f'E_TS_{t}') for t in range(T)}
+    E_BS = {t: model.continuous_var(
+        lb=E_BS_MIN, ub=E_BS_MAX, name=f'E_BS_{t}') for t in range(T)}
     # 初始资源状态
     model.add_constraint(E_BS[0] == R_set.E_BS[0])
     model.add_constraint(E_TS[0] == R_set.E_TS[0])
@@ -246,27 +252,30 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
     # 电池放电量
     P_BS_DN_MIN, P_BS_DN_MAX = 0, 24  # 0-24kw
 
-    P_BS_d = {t: model.continuous_var(lb=P_BS_DN_MIN, ub=P_BS_DN_MAX, name=f'P_BS_d_{t}') for t in range(T)}
+    P_BS_d = {t: model.continuous_var(
+        lb=P_BS_DN_MIN, ub=P_BS_DN_MAX, name=f'P_BS_d_{t}') for t in range(T)}
 
     # 电池充电量
     P_BS_CN_MIN, P_BS_CN_MAX = 0, 24  # 0-24kw
-    P_BS_c = {t: model.continuous_var(lb=P_BS_CN_MIN, ub=P_BS_CN_MAX, name=f'P_BS_c_{t}') for t in range(T)}
+    P_BS_c = {t: model.continuous_var(
+        lb=P_BS_CN_MIN, ub=P_BS_CN_MAX, name=f'P_BS_c_{t}') for t in range(T)}
     # 电池放电状态 1/0
     a_BS_d = {t: model.binary_var(name=f'a_BS_d_{t}') for t in range(T)}
     a_BS_c = {t: model.binary_var(name=f'a_BS_c_{t}') for t in range(T)}
-    # BS成本
+    # BS 成本
     C_BS = {t: model.continuous_var(name=f'C_BS_{t}') for t in range(T)}
     for t in range(1, T):
         # (2.1)
         eta_BS_c, eta_BS_d = 0.98, 0.98
-        model.add_constraint(E_BS[t] == E_BS[t - 1] + eta_BS_c * P_BS_c[t] - P_BS_d[t] / eta_BS_d)
+        model.add_constraint(E_BS[t] == E_BS[t - 1] +
+                             eta_BS_c * P_BS_c[t] - P_BS_d[t] / eta_BS_d)
     for t in range(T):
         # (2.2)
         model.add_constraint(P_BS_c[t] <= a_BS_c[t] * P_BS_CN_MAX)
         # (2.3)
         model.add_constraint(P_BS_d[t] <= a_BS_d[t] * P_BS_DN_MAX)
         # (2.4)
-        # 见E_BS定义
+        # 见 E_BS 定义
         # (2.5)
         model.add_constraint(a_BS_c[t] + a_BS_d[t] <= 1)
         # (2.6)
@@ -282,7 +291,8 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
 
     # 2.3 PG
     # (2.9)
-    P_PG = {t: model.continuous_var(name=f'P_PG_{t}') for t in range(T)}  # t时买入的电
+    P_PG = {t: model.continuous_var(name=f'P_PG_{t}')
+            for t in range(T)}  # t 时买入的电
     C_EP = {t: model.continuous_var(name=f'C_EP_{t}') for t in range(T)}
     for t in range(T):
         model.add_constraint(C_EP[t] == W_set.E_PRICE[t] * P_PG[t])
@@ -300,7 +310,8 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
     eta_loss = 0.2
     eta_hr = 0.8
     for t in range(T):
-        model.add_constraint(H_CHP[t] == P_CHP[t] * eta_hr * (1 - eta_mt - eta_loss) / eta_mt)
+        model.add_constraint(H_CHP[t] == P_CHP[t] *
+                             eta_hr * (1 - eta_mt - eta_loss) / eta_mt)
     # (2.12)
     eta_gas = 3.24
     H_GAS = 9.78
@@ -311,17 +322,20 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
     # 2.5 TS
     eta_TS_d, eta_TS_c = 0.01, 0.98
     H_TS_DN_MIN, H_TS_DN_MAX = 0, 100
-    H_TS_d = {t: model.continuous_var(lb=H_TS_DN_MIN, ub=H_TS_DN_MAX, name=f'H_TS_d_{t}') for t in range(T)}
+    H_TS_d = {t: model.continuous_var(
+        lb=H_TS_DN_MIN, ub=H_TS_DN_MAX, name=f'H_TS_d_{t}') for t in range(T)}
     # 电池充电量
     H_TS_CN_MIN, H_TS_CN_MAX = 0, 100
-    H_TS_c = {t: model.continuous_var(lb=H_TS_CN_MIN, ub=H_TS_CN_MAX, name=f'H_TS_c_{t}') for t in range(T)}
+    H_TS_c = {t: model.continuous_var(
+        lb=H_TS_CN_MIN, ub=H_TS_CN_MAX, name=f'H_TS_c_{t}') for t in range(T)}
     # 储热器放热状态 1/0
     a_TS_d = {t: model.binary_var(name=f'a_TS_d_{t}') for t in range(T)}
     # 储热器蓄热状态 1/0
     a_TS_c = {t: model.binary_var(name=f'a_TS_c_{t}') for t in range(T)}
     for t in range(1, T):
         # (2.13)
-        model.add_constraint(E_TS[t] == (1 - eta_TS_d) * E_TS[t - 1] - H_TS_d[t] + eta_TS_c * H_TS_c[t])
+        model.add_constraint(E_TS[t] == (
+            1 - eta_TS_d) * E_TS[t - 1] - H_TS_d[t] + eta_TS_c * H_TS_c[t])
     for t in range(T):
         # (2.14)~(2.18)
         model.add_constraint(H_TS_c[t] >= a_TS_c[t] * H_TS_CN_MIN)
@@ -329,15 +343,17 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
         model.add_constraint(H_TS_d[t] <= a_TS_d[t] * H_TS_DN_MAX)
         model.add_constraint(H_TS_d[t] <= a_TS_d[t] * H_TS_DN_MAX)
         model.add_constraint(a_TS_c[t] + a_TS_d[t] <= 1)
-        # (2.18)见E_TS定义
+        # (2.18) 见 E_TS 定义
 
     # 2.6 Cool
     P_EC_MAX = 88.1
     H_AC_MAX = 168
     a_EC = 4
     a_AC = 0.7
-    P_EC = {t: model.continuous_var(lb=0, ub=P_EC_MAX, name=f'P_EC_{t}') for t in range(T)}
-    H_AC = {t: model.continuous_var(lb=0, ub=P_EC_MAX, name=f'H_AC_{t}') for t in range(T)}
+    P_EC = {t: model.continuous_var(
+        lb=0, ub=P_EC_MAX, name=f'P_EC_{t}') for t in range(T)}
+    H_AC = {t: model.continuous_var(
+        lb=0, ub=P_EC_MAX, name=f'H_AC_{t}') for t in range(T)}
     Q_EC = {t: model.continuous_var(name=f'Q_EC_{t}') for t in range(T)}
     Q_AC = {t: model.continuous_var(name=f'Q_AC_{t}') for t in range(T)}
 
@@ -347,15 +363,17 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
         # (2.20)
         model.add_constraint(Q_AC[t] == H_AC[t] * a_AC)
         # (2.21)~(2.22)
-        # 见P_EC和H_AC定义
+        # 见 P_EC 和 H_AC 定义
 
     # 2.7 Energy balance
     for t in range(T):
         # power balance
-        model.add_constraint(P_RES[t] + P_PG[t] + P_BS_d[t] + P_CHP[t] == P_EC[t] + P_BS_c[t] + W_set.P_EL[t])
+        model.add_constraint(
+            P_RES[t] + P_PG[t] + P_BS_d[t] + P_CHP[t] == P_EC[t] + P_BS_c[t] + W_set.P_EL[t])
         # heat balance
         eta_he = 0.98
-        model.add_constraint(H_AC[t] + W_set.H_TL[t] / eta_he + H_TS_c[t] == H_TS_d[t] + H_CHP[t])
+        model.add_constraint(H_AC[t] + W_set.H_TL[t] /
+                             eta_he + H_TS_c[t] == H_TS_d[t] + H_CHP[t])
         # cool balance
         model.add_constraint(H_AC[t] * a_AC + P_EC[t] * a_EC == W_set.C_TL[t])
 
@@ -364,7 +382,7 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
 
     # 求解
     model.minimize(obj_expr)
-    # print('MILP求解结果如下:')
+    # print('MILP 求解结果如下:')
     solution: SolveSolution = model.solve()
     variable_data = []
 
@@ -376,18 +394,20 @@ def solve_milp_all(R_set: R, W_set: W, mode='r', data_path=''):
         # for var in model.iter_variables():
         #     print(f"{var}: {solution[var]}")
 
-        variable_data.append({"Variable": 'Obj_Value', "Value": solution.objective_value})
+        variable_data.append(
+            {"Variable": 'Obj_Value', "Value": solution.objective_value})
         for var in model.iter_variables():
-            variable_data.append({"Variable": var.name, "Value": solution[var]})
+            variable_data.append(
+                {"Variable": var.name, "Value": solution[var]})
         # print(model.get_solve_details())
         if mode == 'w':
             df = pd.DataFrame(variable_data)
             df.to_excel(data_path, index=False)
-            print('求解成功!')
+            print('求解成功！')
             print(f'打开求解文件{data_path}查看结果')
     else:
         print(model.get_solve_details())
-        print('求解失败!')
+        print('求解失败！')
     return solution
 
 
@@ -414,23 +434,26 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
     # 2.1 BS
     # 电池放电量
     P_BS_DN_MIN, P_BS_DN_MAX = 0, 24  # 0-24kw
-    P_BS_d = model.continuous_var(lb=P_BS_DN_MIN, ub=P_BS_DN_MAX, name=f'P_BS_d_t')
+    P_BS_d = model.continuous_var(
+        lb=P_BS_DN_MIN, ub=P_BS_DN_MAX, name=f'P_BS_d_t')
     # 电池充电量
     P_BS_CN_MIN, P_BS_CN_MAX = 0, 24  # 0-24kw
-    P_BS_c = model.continuous_var(lb=P_BS_CN_MIN, ub=P_BS_CN_MAX, name=f'P_BS_c_t')
+    P_BS_c = model.continuous_var(
+        lb=P_BS_CN_MIN, ub=P_BS_CN_MAX, name=f'P_BS_c_t')
     # 电池放电状态 1/0
     a_BS_d = model.binary_var(name=f'a_BS_d_t')
     # 电池充电状态 1/0
     a_BS_c = model.binary_var(name=f'a_BS_c_t')
     # (2.1)
     eta_BS_c, eta_BS_d = 0.98, 0.98
-    model.add_constraint(E_BS == R_set.E_BS[t - 1] + eta_BS_c * P_BS_c - P_BS_d / eta_BS_d)
+    model.add_constraint(
+        E_BS == R_set.E_BS[t - 1] + eta_BS_c * P_BS_c - P_BS_d / eta_BS_d)
     # (2.2)
     model.add_constraint(P_BS_c <= a_BS_c * P_BS_CN_MAX)
     # (2.3)
     model.add_constraint(P_BS_d <= a_BS_d * P_BS_DN_MAX)
     # (2.4)
-    # 见E_BS定义
+    # 见 E_BS 定义
     # (2.5)
     model.add_constraint(a_BS_c + a_BS_d <= 1)
     # (2.6)
@@ -445,7 +468,7 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
 
     # 2.3 PG
     # (2.9)
-    P_PG = model.continuous_var(name=f'P_PG_t')  # t时买入的电
+    P_PG = model.continuous_var(name=f'P_PG_t')  # t 时买入的电
     C_EP = model.continuous_var(name=f'C_EP_t')
     model.add_constraint(C_EP == W_set.E_PRICE[t] * P_PG)
 
@@ -459,7 +482,8 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
     H_CHP = model.continuous_var(name=f'H_CHP_t')
     eta_loss = 0.2
     eta_hr = 0.8
-    model.add_constraint(H_CHP == P_CHP * eta_hr * (1 - eta_mt - eta_loss) / eta_mt)
+    model.add_constraint(H_CHP == P_CHP * eta_hr *
+                         (1 - eta_mt - eta_loss) / eta_mt)
     # (2.12)
     eta_gas = 3.24
     H_GAS = 9.78
@@ -469,24 +493,27 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
     # 2.5 TS
     eta_TS_d, eta_TS_c = 0.01, 0.98
     H_TS_DN_MIN, H_TS_DN_MAX = 0, 100
-    H_TS_d = model.continuous_var(lb=H_TS_DN_MIN, ub=H_TS_DN_MAX, name=f'H_TS_d_t')
+    H_TS_d = model.continuous_var(
+        lb=H_TS_DN_MIN, ub=H_TS_DN_MAX, name=f'H_TS_d_t')
     # 电池充电量
     H_TS_CN_MIN, H_TS_CN_MAX = 0, 100
-    H_TS_c = model.continuous_var(lb=H_TS_CN_MIN, ub=H_TS_CN_MAX, name=f'H_TS_c_t')
+    H_TS_c = model.continuous_var(
+        lb=H_TS_CN_MIN, ub=H_TS_CN_MAX, name=f'H_TS_c_t')
 
     # 储热器放热状态 1/0
     a_TS_d = model.binary_var(name=f'a_TS_d_t')
     # 储热器蓄热状态 1/0
     a_TS_c = model.binary_var(name=f'a_TS_c_t')
     # (2.13)
-    model.add_constraint(E_TS == (1 - eta_TS_d) * R_set.E_TS[t - 1] - H_TS_d + eta_TS_c * H_TS_c)
+    model.add_constraint(E_TS == (1 - eta_TS_d) *
+                         R_set.E_TS[t - 1] - H_TS_d + eta_TS_c * H_TS_c)
     # (2.14)~(2.18)
     model.add_constraint(H_TS_c >= a_TS_c * H_TS_CN_MIN)
     model.add_constraint(H_TS_c >= a_TS_c * H_TS_CN_MIN)
     model.add_constraint(H_TS_d <= a_TS_d * H_TS_DN_MAX)
     model.add_constraint(H_TS_d <= a_TS_d * H_TS_DN_MAX)
     model.add_constraint(a_TS_c + a_TS_d <= 1)
-    # (2.18)见E_TS定义
+    # (2.18) 见 E_TS 定义
 
     # 2.6 Cool
     P_EC_MAX = 88.1
@@ -502,14 +529,16 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
     # (2.20)
     model.add_constraint(Q_AC == H_AC * a_AC)
     # (2.21)~(2.22)
-    # 见P_EC和H_AC定义
+    # 见 P_EC 和 H_AC 定义
 
     # 2.7 Energy balance
     # power balance
-    model.add_constraint(P_RES + P_PG + P_BS_d + P_CHP == P_EC + P_BS_c + W_set.P_EL[t])
+    model.add_constraint(P_RES + P_PG + P_BS_d + P_CHP ==
+                         P_EC + P_BS_c + W_set.P_EL[t])
     # heat balance
     eta_he = 0.98
-    model.add_constraint(H_AC + W_set.H_TL[t] / eta_he + H_TS_c == H_TS_d + H_CHP)
+    model.add_constraint(
+        H_AC + W_set.H_TL[t] / eta_he + H_TS_c == H_TS_d + H_CHP)
     # cool balance
     model.add_constraint(H_AC * a_AC + P_EC * a_EC == W_set.C_TL[t])
 
@@ -533,7 +562,7 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
     gama_g = {g: model.binary_var(name=f'gema_{g}') for g in range(G)}
     model.add_constraint(model.sum(gama_g[g] for g in range(G)) == 1)
 
-    # 引入R_g
+    # 引入 R_g
     model.add_constraint(E_TS == model.sum(
         gama_g[i * BS_SIZE + j] * E_TS_SPACE[i, j] for i in range(TS_SIZE) for j in
         range(BS_SIZE)))
@@ -542,7 +571,7 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
         gama_g[i * BS_SIZE + j] * E_BS_SPACE[i, j] for i in range(TS_SIZE) for j in
         range(BS_SIZE)))
 
-    # 修改V
+    # 修改 V
     V_t_plus_1 = 0
     gama_c = 0
 
@@ -556,19 +585,21 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
 
     # 求解
     model.minimize(obj_expr)
-    # print('MILP求解结果如下:')
+    # print('MILP 求解结果如下:')
     solution: SolveSolution = model.solve()
 
     variable_data = []
     if solution != None:
-        variable_data.append({"Variable": 'Obj_Value', "Value": solution.objective_value})
+        variable_data.append(
+            {"Variable": 'Obj_Value', "Value": solution.objective_value})
         for var in model.iter_variables():
-            variable_data.append({"Variable": var.name, "Value": solution[var]})
+            variable_data.append(
+                {"Variable": var.name, "Value": solution[var]})
         # print(model.get_solve_details())
         if mode == 'w':
             df = pd.DataFrame(variable_data)
             df.to_excel(data_path, index=False)
-            print('求解成功!')
+            print('求解成功！')
             print(f'打开求解文件{data_path}查看结果')
         # 状态转移
         R_set.E_BS[t] = solution['E_BS_t']
@@ -581,20 +612,22 @@ def solve_milp_v(R_set: R, W_set: W, t, mode='r', data_path=''):
 
 def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
     """
-    求解MPC-n的milp
+    求解 MPC-n 的 milp
     参数：
-        R_t: t_start时刻的资源状态
-        W_t: t_start-t_end区间的环境信息
-        n: MPC预测步长
+        R_t: t_start 时刻的资源状态
+        W_t: t_start-t_end 区间的环境信息
+        n: MPC 预测步长
     返回：
-        t_start时刻的调度策略
+        t_start 时刻的调度策略
     """
     # 创建模型
     model = Model(name='IETS MILP MODEL')
 
     # 决策变量
-    E_TS = {t: model.continuous_var(lb=E_TS_MIN, ub=E_TS_MAX, name=f'E_TS_{t}') for t in range(t_start, t_end)}
-    E_BS = {t: model.continuous_var(lb=E_BS_MIN, ub=E_BS_MAX, name=f'E_BS_{t}') for t in range(t_start, t_end)}
+    E_TS = {t: model.continuous_var(
+        lb=E_TS_MIN, ub=E_TS_MAX, name=f'E_TS_{t}') for t in range(t_start, t_end)}
+    E_BS = {t: model.continuous_var(
+        lb=E_BS_MIN, ub=E_BS_MAX, name=f'E_BS_{t}') for t in range(t_start, t_end)}
     # 初始资源状态
     model.add_constraint(E_BS[t_start] == R_t.E_BS[t_start])
     model.add_constraint(E_TS[t_start] == R_t.E_TS[t_start])
@@ -611,22 +644,26 @@ def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
     P_BS_c = {t: model.continuous_var(lb=P_BS_CN_MIN, ub=P_BS_CN_MAX, name=f'P_BS_c_{t}') for t in
               range(t_start, t_end)}
     # 电池放电状态 1/0
-    a_BS_d = {t: model.binary_var(name=f'a_BS_d_{t}') for t in range(t_start, t_end)}
-    a_BS_c = {t: model.binary_var(name=f'a_BS_c_{t}') for t in range(t_start, t_end)}
-    # BS成本
-    C_BS = {t: model.continuous_var(name=f'C_BS_{t}') for t in range(t_start, t_end)}
-    # BS状态转移
+    a_BS_d = {t: model.binary_var(name=f'a_BS_d_{t}')
+              for t in range(t_start, t_end)}
+    a_BS_c = {t: model.binary_var(name=f'a_BS_c_{t}')
+              for t in range(t_start, t_end)}
+    # BS 成本
+    C_BS = {t: model.continuous_var(name=f'C_BS_{t}')
+            for t in range(t_start, t_end)}
+    # BS 状态转移
     for t in range(t_start + 1, t_end):
         # (2.1)
         eta_BS_c, eta_BS_d = 0.98, 0.98
-        model.add_constraint(E_BS[t] == E_BS[t - 1] + eta_BS_c * P_BS_c[t] - P_BS_d[t] / eta_BS_d)
+        model.add_constraint(E_BS[t] == E_BS[t - 1] +
+                             eta_BS_c * P_BS_c[t] - P_BS_d[t] / eta_BS_d)
     for t in range(t_start, t_end):
         # (2.2)
         model.add_constraint(P_BS_c[t] <= a_BS_c[t] * P_BS_CN_MAX)
         # (2.3)
         model.add_constraint(P_BS_d[t] <= a_BS_d[t] * P_BS_DN_MAX)
         # (2.4)
-        # 见E_BS定义
+        # 见 E_BS 定义
         # (2.5)
         model.add_constraint(a_BS_c[t] + a_BS_d[t] <= 1)
         # (2.6)
@@ -635,36 +672,44 @@ def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
 
     # 2.2 RES
     # (2.7)
-    P_RES = {t: model.continuous_var(name=f'P_RES_{t}') for t in range(t_start, t_end)}
+    P_RES = {t: model.continuous_var(name=f'P_RES_{t}')
+             for t in range(t_start, t_end)}
 
     for t in range(t_start, t_end):
         model.add_constraint(P_RES[t] <= W_t.P_RES[t])
 
     # 2.3 PG
     # (2.9)
-    P_PG = {t: model.continuous_var(name=f'P_PG_{t}') for t in range(t_start, t_end)}  # t时买入的电
-    C_EP = {t: model.continuous_var(name=f'C_EP_{t}') for t in range(t_start, t_end)}
+    P_PG = {t: model.continuous_var(name=f'P_PG_{t}')
+            for t in range(t_start, t_end)}  # t 时买入的电
+    C_EP = {t: model.continuous_var(name=f'C_EP_{t}')
+            for t in range(t_start, t_end)}
     for t in range(t_start, t_end):
         model.add_constraint(C_EP[t] == W_t.E_PRICE[t] * P_PG[t])
 
     # 2.4 CHP
     # (2.10)
     eta_mt = 0.3
-    F_MT = {t: model.continuous_var(name=f'F_MT_{t}') for t in range(t_start, t_end)}
-    P_CHP = {t: model.continuous_var(name=f'P_CHP_{t}') for t in range(t_start, t_end)}
+    F_MT = {t: model.continuous_var(name=f'F_MT_{t}')
+            for t in range(t_start, t_end)}
+    P_CHP = {t: model.continuous_var(name=f'P_CHP_{t}')
+             for t in range(t_start, t_end)}
 
     for t in range(t_start, t_end):
         model.add_constraint(F_MT[t] == P_CHP[t] / eta_mt)
     # (2.11)
-    H_CHP = {t: model.continuous_var(name=f'H_CHP_{t}') for t in range(t_start, t_end)}
+    H_CHP = {t: model.continuous_var(name=f'H_CHP_{t}')
+             for t in range(t_start, t_end)}
     eta_loss = 0.2
     eta_hr = 0.8
     for t in range(t_start, t_end):
-        model.add_constraint(H_CHP[t] == P_CHP[t] * eta_hr * (1 - eta_mt - eta_loss) / eta_mt)
+        model.add_constraint(H_CHP[t] == P_CHP[t] *
+                             eta_hr * (1 - eta_mt - eta_loss) / eta_mt)
     # (2.12)
     eta_gas = 3.24
     H_GAS = 9.78
-    C_CHP = {t: model.continuous_var(name=f'C_CHP_{t}') for t in range(t_start, t_end)}
+    C_CHP = {t: model.continuous_var(name=f'C_CHP_{t}')
+             for t in range(t_start, t_end)}
     for t in range(t_start, t_end):
         model.add_constraint(C_CHP[t] == eta_gas * F_MT[t] / H_GAS)
 
@@ -678,12 +723,15 @@ def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
     H_TS_c = {t: model.continuous_var(lb=H_TS_CN_MIN, ub=H_TS_CN_MAX, name=f'H_TS_c_{t}') for t in
               range(t_start, t_end)}
     # 储热器放热状态 1/0
-    a_TS_d = {t: model.binary_var(name=f'a_TS_d_{t}') for t in range(t_start, t_end)}
+    a_TS_d = {t: model.binary_var(name=f'a_TS_d_{t}')
+              for t in range(t_start, t_end)}
     # 储热器蓄热状态 1/0
-    a_TS_c = {t: model.binary_var(name=f'a_TS_c_{t}') for t in range(t_start, t_end)}
+    a_TS_c = {t: model.binary_var(name=f'a_TS_c_{t}')
+              for t in range(t_start, t_end)}
     for t in range(t_start + 1, t_end):
         # (2.13)
-        model.add_constraint(E_TS[t] == (1 - eta_TS_d) * E_TS[t - 1] - H_TS_d[t] + eta_TS_c * H_TS_c[t])
+        model.add_constraint(E_TS[t] == (
+            1 - eta_TS_d) * E_TS[t - 1] - H_TS_d[t] + eta_TS_c * H_TS_c[t])
     for t in range(t_start, t_end):
         # (2.14)~(2.18)
         model.add_constraint(H_TS_c[t] >= a_TS_c[t] * H_TS_CN_MIN)
@@ -691,17 +739,21 @@ def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
         model.add_constraint(H_TS_d[t] <= a_TS_d[t] * H_TS_DN_MAX)
         model.add_constraint(H_TS_d[t] <= a_TS_d[t] * H_TS_DN_MAX)
         model.add_constraint(a_TS_c[t] + a_TS_d[t] <= 1)
-        # (2.18)见E_TS定义
+        # (2.18) 见 E_TS 定义
 
     # 2.6 Cool
     P_EC_MAX = 88.1
     H_AC_MAX = 168
     a_EC = 4
     a_AC = 0.7
-    P_EC = {t: model.continuous_var(lb=0, ub=P_EC_MAX, name=f'P_EC_{t}') for t in range(t_start, t_end)}
-    H_AC = {t: model.continuous_var(lb=0, ub=P_EC_MAX, name=f'H_AC_{t}') for t in range(t_start, t_end)}
-    Q_EC = {t: model.continuous_var(name=f'Q_EC_{t}') for t in range(t_start, t_end)}
-    Q_AC = {t: model.continuous_var(name=f'Q_AC_{t}') for t in range(t_start, t_end)}
+    P_EC = {t: model.continuous_var(
+        lb=0, ub=P_EC_MAX, name=f'P_EC_{t}') for t in range(t_start, t_end)}
+    H_AC = {t: model.continuous_var(
+        lb=0, ub=P_EC_MAX, name=f'H_AC_{t}') for t in range(t_start, t_end)}
+    Q_EC = {t: model.continuous_var(name=f'Q_EC_{t}')
+            for t in range(t_start, t_end)}
+    Q_AC = {t: model.continuous_var(name=f'Q_AC_{t}')
+            for t in range(t_start, t_end)}
 
     for t in range(t_start, t_end):
         # (2.19)
@@ -709,24 +761,27 @@ def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
         # (2.20)
         model.add_constraint(Q_AC[t] == H_AC[t] * a_AC)
         # (2.21)~(2.22)
-        # 见P_EC和H_AC定义
+        # 见 P_EC 和 H_AC 定义
 
     # 2.7 Energy balance
     for t in range(t_start, t_end):
         # power balance
-        model.add_constraint(P_RES[t] + P_PG[t] + P_BS_d[t] + P_CHP[t] == P_EC[t] + P_BS_c[t] + W_t.P_EL[t])
+        model.add_constraint(
+            P_RES[t] + P_PG[t] + P_BS_d[t] + P_CHP[t] == P_EC[t] + P_BS_c[t] + W_t.P_EL[t])
         # heat balance
         eta_he = 0.98
-        model.add_constraint(H_AC[t] + W_t.H_TL[t] / eta_he + H_TS_c[t] == H_TS_d[t] + H_CHP[t])
+        model.add_constraint(H_AC[t] + W_t.H_TL[t] /
+                             eta_he + H_TS_c[t] == H_TS_d[t] + H_CHP[t])
         # cool balance
         model.add_constraint(H_AC[t] * a_AC + P_EC[t] * a_EC == W_t.C_TL[t])
 
     # 目标函数
-    obj_expr = model.sum(C_EP[t] + C_CHP[t] + C_BS[t] for t in range(t_start, t_end))
+    obj_expr = model.sum(C_EP[t] + C_CHP[t] + C_BS[t]
+                         for t in range(t_start, t_end))
 
     # 求解
     model.minimize(obj_expr)
-    # print('MILP求解结果如下:')
+    # print('MILP 求解结果如下:')
     solution: SolveSolution = model.solve()
     variable_data = []
 
@@ -738,9 +793,11 @@ def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
         # for var in model.iter_variables():
         #     print(f"{var}: {solution[var]}")
 
-        variable_data.append({"Variable": 'Obj_Value', "Value": solution.objective_value})
+        variable_data.append(
+            {"Variable": 'Obj_Value', "Value": solution.objective_value})
         for var in model.iter_variables():
-            variable_data.append({"Variable": var.name, "Value": solution[var]})
+            variable_data.append(
+                {"Variable": var.name, "Value": solution[var]})
         # print(model.get_solve_details())
         # if mode == 'w':
         #     df = pd.DataFrame(variable_data)
@@ -749,11 +806,12 @@ def solve_milp_mpc(R_t: R, W_t: W, t_start, t_end, n=3):
         #     print(f'打开求解文件{data_path}查看结果')
     else:
         print(model.get_solve_details())
-        print('求解失败!')
+        print('求解失败！')
     return solution
 
 
 if __name__ == '__main__':
-    R_sets, W_sets = init_data(mode='w')
+    R_sets, W_sets = init_data(mode='r')
     for i in range(SAMPLE_SIZE):
-        solve_milp_all(R_sets[i], W_sets[i], data_path=f'./data/Solution/Solution_{i}.xlsx')
+        solve_milp_all(R_sets[i], W_sets[i], mode='w',
+                       data_path=f'./data/Solution/Solution_{i}.xlsx')

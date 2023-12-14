@@ -7,10 +7,10 @@ from MILP import *
 def mpc_dispatch(W_t: W, R_t: R, n=3):
     """
     MPC-n
-    模型预测控制-调度算法
+    模型预测控制 - 调度算法
 
     Args:
-        n: 预测n步未来场景
+        n: 预测 n 步未来场景
     """
     cost = []
     E_TS = []
@@ -25,9 +25,9 @@ def mpc_dispatch(W_t: W, R_t: R, n=3):
         solution = solve_milp_mpc(R_t, W_t, t_start, t_end)
         R_t.E_TS[t+1] = solution[f'E_TS_{t+1}']
         R_t.E_BS[t+1] = solution[f'E_BS_{t+1}']
-        # 保存t时目标值
+        # 保存 t 时目标值
         cost.append(solution.objective_value)
-        # 保存t时能量，绘制能量变化曲线
+        # 保存 t 时能量，绘制能量变化曲线
         E_TS.append(solution[f'E_TS_{t}'])
         E_BS.append(solution[f'E_BS_{t}'])
     E_TS.append(solution[f'E_TS_{t+1}'])

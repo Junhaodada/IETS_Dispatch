@@ -10,10 +10,10 @@ def real_data():
     模拟真实环境信息
 
     Return:
-        W_t: 24h真实外部环境信息
+        W_t: 24h 真实外部环境信息
         R_t: 初始时刻真实资源状态信息
     """
-    # 初始化24h的系统状态
+    # 初始化 24h 的系统状态
     W_data = pd.read_excel('./data/W_data.xlsx', sheet_name='Sheet1')
     W_t = W()
     R_t = R()
@@ -32,7 +32,7 @@ def algo_main(method='mpc'):
     # 生产真实系统状态
     W_t, R_t = real_data()
     if method == 'mpc':
-        # MPC-3调度
+        # MPC-3 调度
         mpc_dispatch(W_t, R_t, n=6)
     elif method == 'adp':
         # ==========训练值函数==========
@@ -41,7 +41,7 @@ def algo_main(method='mpc'):
         # 训练值函数
         il_adp(R_sets, W_sets)
         monotone_adp(R_sets, W_sets)
-        # ==========ADP-IL实时调度==========
+        # ==========ADP-IL 实时调度==========
         # 实时调度
         adp_dispatch(W_t, R_t)
 
