@@ -1,4 +1,4 @@
-from MILP import *
+from milp import *
 import matplotlib.pyplot as plt
 from adp import *
 from mpc import *

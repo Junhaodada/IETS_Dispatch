@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from MILP import *
+from milp import *
 
 
 def mpc_dispatch(W_t: W, R_t: R, n=3):
