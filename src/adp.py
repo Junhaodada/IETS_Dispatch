@@ -12,7 +12,7 @@ def il_adp(R_sets, W_sets):
     # 初始化值函数
     for t in range(T):
         c_max = max(
-            sum(solution[f'C_BS_{t_s}'] + solution[f'C_EP_{t_s}'] +
+            sum(solution[f'C_BS_{t_s}'] + solution[f'C_PG_{t_s}'] +
                 solution[f'C_CHP_{t_s}'] for t_s in range(t, T))
             for solution in solution_list)
         for E_TS in range(E_TS_MAX):
@@ -23,7 +23,7 @@ def il_adp(R_sets, W_sets):
         for t in range(T):
             print(
                 f'epoch {n}:t={t} R{t}={{{r.E_TS[t]},{r.E_BS[t]}}} ==> {v_table.get_value(r, t)}')
-            v = max(solution[f'C_BS_{t_s}'] + solution[f'C_EP_{t_s}'] +
+            v = max(solution[f'C_BS_{t_s}'] + solution[f'C_PG_{t_s}'] +
                     solution[f'C_CHP_{t_s}'] for t_s in range(t, T))
             v_table.update_r_count(r, t)
             alpha = 1 / v_table.get_r_count(r, t)
@@ -69,7 +69,7 @@ def monotone_adp(R_sets, W_sets):
                     f'epoch {n}:t={t} R{t}={{{r.E_TS[t]},{r.E_BS[t]}}} ==> {v_table.get_value(r, t)}')
             solution = solve_milp_v(r, w, t + 1)
             c_sum = solution['C_BS_t'] + \
-                solution['C_EP_t'] + solution['C_CHP_t']
+                solution['C_PG_t'] + solution['C_CHP_t']
             # c_sum = solution.objective_value
             c_tmp += c_sum
             v = solution.objective_value + np.random.randint(-10, 0)
@@ -82,9 +82,10 @@ def monotone_adp(R_sets, W_sets):
                 v_table.set_value(r, t_v, meth_func(z, r, t, r_v, t_v))
         c_data.append(c_tmp)
     # 绘制目标值训练趋势图
-    plt.plot([i for i in range(N)], c_data)
-    plt.show()
+    # plt.plot([i for i in range(N)], c_data)
+    # plt.show()
     v_table.to_csv()
+    pd.Series(c_data).to_csv("./data/c_data.csv", index=False)
     # 画一下 v 的变化
     # v_data = []
     # for i in range(E_BS_MAX):

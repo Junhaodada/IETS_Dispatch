@@ -19,12 +19,12 @@ def real_data():
     R_t = R()
     for t in range(T):
         W_t.E_PRICE[t] = W_data.loc[t, 'E_PRICE']
-        W_t.P_EL[t] = W_data.loc[t, 'P_EL']
-        W_t.H_TL[t] = W_data.loc[t, 'H_TL']
-        W_t.C_TL[t] = W_data.loc[t, 'C_TL']
-        W_t.P_RES[t] = W_data.loc[t, 'P_RES']
-    R_t.E_TS[0] = 150
-    R_t.E_BS[0] = 60
+        W_t.L_Power[t] = W_data.loc[t, 'L_Power']
+        W_t.L_Heat[t] = W_data.loc[t, 'L_Heat']
+        W_t.L_Cool[t] = W_data.loc[t, 'L_Cool']
+        W_t.P_PV[t] = W_data.loc[t, 'P_PV']
+    R_t.E_TS[0] = 1000
+    R_t.E_BS[0] = 500
     return W_t, R_t
 
 
@@ -47,4 +47,4 @@ def algo_main(method='mpc'):
 
 
 if __name__ == '__main__':
-    algo_main()
+    algo_main('adp')

@@ -34,4 +34,5 @@ def mpc_dispatch(W_t: W, R_t: R, n=3):
     E_BS.append(solution[f'E_BS_{t+1}'])
     plt.plot([_ for _ in range(T-1)], cost)
     plt.show()
-    pd.DataFrame({'E_TS': E_TS, 'E_BS': E_BS}).to_excel('./data/mpc_energy.xlsx', index=False)
+    pd.DataFrame({'E_TS': E_TS, 'E_BS': E_BS}).to_excel(
+        './data/mpc_energy.xlsx', index=False)
